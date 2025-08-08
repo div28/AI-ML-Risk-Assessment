@@ -95,14 +95,14 @@ with col2:
         # Prepare API request
         headers = {"Content-Type": "application/json"}
         if api_key and use_auth:
-            # Try different CrewAI auth formats
-            headers["Authorization"] = f"Token {api_key}"  # Try "Token" instead of "Bearer"
+            # Try CrewAI specific header
+            headers["X-CrewAI-Token"] = api_key
             
             # Debug: show what headers we're sending
             st.write("DEBUG - Headers being sent:")
             debug_headers = headers.copy()
-            if "Authorization" in debug_headers:
-                debug_headers["Authorization"] = f"Token {api_key[:4]}..."
+            if "X-CrewAI-Token" in debug_headers:
+                debug_headers["X-CrewAI-Token"] = f"{api_key[:4]}..."
             st.json(debug_headers)
         
         payload = st.session_state.api_payload
