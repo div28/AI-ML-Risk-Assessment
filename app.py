@@ -300,56 +300,56 @@ The **{project}** system has been classified as **{overall_risk} RISK** based on
                         
                         # Display the AI-generated assessment
                         st.markdown(assessment_content)
-                            
-                            # Create comprehensive download data
-                            complete_assessment = {
-                                "workflow_info": {
-                                    "crewai_workflow_id": workflow_id,
-                                    "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
-                                    "assessment_type": "AI-Powered Risk Analysis"
-                                },
-                                "project_details": {
-                                    "project_name": project_name,
-                                    "risk_description": risk_description,
-                                    "contextual_notes": contextual_notes,
-                                    "initial_impact": initial_impact,
-                                    "initial_probability": initial_probability
-                                },
-                                "ai_assessment_report": assessment_content,
-                                "metadata": {
-                                    "generated_by": "Claude AI + CrewAI Integration",
-                                    "model": "claude-sonnet-4",
-                                    "crewai_status": "workflow_initiated"
-                                }
+                        
+                        # Create comprehensive download data
+                        complete_assessment = {
+                            "workflow_info": {
+                                "crewai_workflow_id": workflow_id,
+                                "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+                                "assessment_type": "AI-Powered Risk Analysis"
+                            },
+                            "project_details": {
+                                "project_name": project_name,
+                                "risk_description": risk_description,
+                                "contextual_notes": contextual_notes,
+                                "initial_impact": initial_impact,
+                                "initial_probability": initial_probability
+                            },
+                            "ai_assessment_report": assessment_content,
+                            "metadata": {
+                                "generated_by": "Claude AI + CrewAI Integration",
+                                "model": "intelligent_assessment_engine",
+                                "crewai_status": "workflow_initiated"
                             }
-                            
-                            # Download options
-                            col_dl1, col_dl2 = st.columns(2)
-                            
-                            with col_dl1:
-                                st.download_button(
-                                    label="📥 Download Complete Assessment",
-                                    data=json.dumps(complete_assessment, indent=2),
-                                    file_name=f"ai_risk_assessment_{project_name}_{int(time.time())}.json",
-                                    mime="application/json"
-                                )
-                            
-                            with col_dl2:
-                                st.download_button(
-                                    label="📄 Download Report Only",
-                                    data=assessment_content,
-                                    file_name=f"risk_report_{project_name}_{int(time.time())}.md",
-                                    mime="text/markdown"
-                                )
-                            
-                            # Show integration summary
-                            with st.expander("🔧 Integration Details"):
-                                st.write("**System Architecture:**")
-                                st.write("- ✅ CrewAI Multi-Agent Workflow (Backend)")
-                                st.write("- ✅ Claude AI Analysis Engine (Assessment)")
-                                st.write("- ✅ Streamlit Interface (Frontend)")
-                                st.write("- ✅ Real-time API Integration")
-                                st.write(f"- ✅ Workflow ID: `{workflow_id}`")
+                        }
+                        
+                        # Download options
+                        col_dl1, col_dl2 = st.columns(2)
+                        
+                        with col_dl1:
+                            st.download_button(
+                                label="📥 Download Complete Assessment",
+                                data=json.dumps(complete_assessment, indent=2),
+                                file_name=f"ai_risk_assessment_{project_name}_{int(time.time())}.json",
+                                mime="application/json"
+                            )
+                        
+                        with col_dl2:
+                            st.download_button(
+                                label="📄 Download Report Only",
+                                data=assessment_content,
+                                file_name=f"risk_report_{project_name}_{int(time.time())}.md",
+                                mime="text/markdown"
+                            )
+                        
+                        # Show integration summary
+                        with st.expander("🔧 Integration Details"):
+                            st.write("**System Architecture:**")
+                            st.write("- ✅ CrewAI Multi-Agent Workflow (Backend)")
+                            st.write("- ✅ Intelligent Assessment Engine (AI Analysis)")
+                            st.write("- ✅ Streamlit Interface (Frontend)")
+                            st.write("- ✅ Real-time API Integration")
+                            st.write(f"- ✅ Workflow ID: `{workflow_id}`")
                         
                         else:
                             st.error("AI assessment service unavailable")
