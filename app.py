@@ -48,6 +48,14 @@ with col1:
     
     # Submit button
     if st.button("Run Risk Assessment", type="primary"):
+        # Debug: Show what values we're capturing
+        st.write("DEBUG - Captured values:")
+        st.write(f"Project Name: '{project_name}'")
+        st.write(f"Risk Description: '{risk_description}'")
+        st.write(f"Customer Email: '{customer_email}'")
+        st.write(f"Initial Impact: '{initial_impact}'")
+        st.write(f"Initial Probability: '{initial_probability}'")
+        
         if risk_description and project_name and customer_email:
             # Store input in session state
             st.session_state.workflow_running = True
@@ -64,8 +72,13 @@ with col1:
                 "agents": agents_to_use,
                 "max_iterations": max_iterations
             }
+            
+            # Debug: Show the payload being sent
+            st.write("DEBUG - Payload being sent:")
+            st.json(st.session_state.api_payload)
         else:
             st.error("Please fill in all required fields: Risk Description, Project Name, and Customer Email")
+            st.write(f"Missing: Risk Description={bool(risk_description)}, Project Name={bool(project_name)}, Customer Email={bool(customer_email)}")
 
 with col2:
     st.header("Output")
