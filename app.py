@@ -350,15 +350,12 @@ The **{project}** system has been classified as **{overall_risk} RISK** based on
                             st.write("- ✅ Streamlit Interface (Frontend)")
                             st.write("- ✅ Real-time API Integration")
                             st.write(f"- ✅ Workflow ID: `{workflow_id}`")
-                        
-                        else:
-                            st.error("AI assessment service unavailable")
                             
                     except Exception as e:
-                        st.error(f"AI Analysis Error: {str(e)}")
+                        st.error(f"Assessment Generation Error: {str(e)}")
                         
-                        # Fallback to template-based assessment
-                        st.info("🔄 Generating template-based assessment...")
+                        # Fallback to simple assessment
+                        st.info("🔄 Generating basic assessment...")
                         
                         fallback_assessment = f"""# Risk Assessment Report for {project_name}
 
