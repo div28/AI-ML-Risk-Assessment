@@ -178,14 +178,16 @@ with col2:
                     if "agents_involved" in result:
                         st.write("**Agents Involved:**", ", ".join(result["agents_involved"]))
                 
-                # Download option
-                if st.button("Download Results"):
+                # Download option - only show if we have actual results
+                if "final_output" in result or "result" in result or len(result) > 1:
                     st.download_button(
                         label="Download JSON",
                         data=json.dumps(result, indent=2),
                         file_name=f"risk_assessment_results_{int(time.time())}.json",
                         mime="application/json"
                     )
+                else:
+                    st.info("Download will be available when the workflow completes and returns full results.")
                 
             else:
                 st.error(f"API Error: {response.status_code} - {response.text}")
