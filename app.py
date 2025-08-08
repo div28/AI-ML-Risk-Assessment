@@ -63,119 +63,82 @@ with col1:
                 
                 # Display results
                 if response.status_code == 200:
-                    st.success("✅ Assessment Complete!")
-                    st.subheader("📊 AI Risk Assessment Results")
-                    
-                    # Show the complete report
                     assessment_results = response.json()
                     
-                    # Display results beautifully
                     if "kickoff_id" in assessment_results:
-                        st.info(f"🚀 Workflow Started! ID: {assessment_results['kickoff_id']}")
-                        st.write("Your multi-agent assessment is now running...")
-                        
-                        # Try to get immediate results
                         kickoff_id = assessment_results["kickoff_id"]
+                        st.success(f"✅ Workflow Started! ID: {kickoff_id}")
                         
-                        # Wait a moment and try to get results
-                        st.write("⏳ Checking for completed results...")
-                        time.sleep(5)
+                        # Poll for actual results using the kickoff_id
+                        st.info("⏳ Fetching your assessment results...")
                         
-                        # Try different result endpoints
-                        base_url = "https://ai-ml-product-risk-intake-assessment-agent--7d76c5b8.crewai.com"
-                        result_urls = [
-                            f"{base_url}/{kickoff_id}",
-                            f"{base_url}/result/{kickoff_id}",
-                            f"{base_url}/output/{kickoff_id}",
-                            f"{base_url}/status/{kickoff_id}"
-                        ]
-                        
-                        found_results = False
-                        for url in result_urls:
+                        # Try to get results from the kickoff_id endpoint
+                        max_attempts = 12  # 2 minutes total
+                        for attempt in range(max_attempts):
                             try:
-                                result_response = requests.get(url, headers={
-                                    "Authorization": "Bearer a57ebdae2616",
-                                    "Content-Type": "application/json"
-                                }, timeout=10)
+                                # Try to get results from the same kickoff endpoint with the ID
+                                results_response = requests.get(
+                                    f"https://ai-ml-product-risk-intake-assessment-agent--7d76c5b8.crewai.com/kickoff/{kickoff_id}",
+                                    headers={
+                                        "Authorization": "Bearer a57ebdae2616",
+                                        "Content-Type": "application/json"
+                                    },
+                                    timeout=10
+                                )
                                 
-                                if result_response.status_code == 200:
-                                    result_data = result_response.json()
-                                    if result_data and len(str(result_data)) > 100:
-                                        st.success("📋 Found Assessment Results!")
-                                        st.json(result_data)
+                                if results_response.status_code == 200:
+                                    results_data = results_response.json()
+                                    
+                                    # Check if we got actual results (not just status)
+                                    if results_data and "status" in results_data and results_data["status"] == "completed":
+                                        st.success("🎉 Assessment Complete!")
+                                        st.subheader("📊 Your AI Risk Assessment Results")
+                                        
+                                        # Show the actual assessment content
+                                        if "output" in results_data:
+                                            st.markdown(results_data["output"])
+                                        else:
+                                            st.json(results_data)
                                         
                                         # Download button
                                         st.download_button(
                                             label="📥 Download Assessment",
-                                            data=json.dumps(result_data, indent=2),
+                                            data=json.dumps(results_data, indent=2),
                                             file_name=f"risk_assessment_{project_name}_{int(time.time())}.json",
                                             mime="application/json"
                                         )
-                                        found_results = True
                                         break
-                            except:
-                                continue
-                        
-                        if not found_results:
-                            st.write("⌛ Assessment is processing... Results will be available shortly.")
-                            st.write("Your workflow is running successfully in the background!")
-                            
-                            # Add manual results input section
-                            st.markdown("---")
-                            st.subheader("📋 Manual Results Entry")
-                            st.write("Since your CrewAI workflow completed successfully, you can paste the results here:")
-                            
-                            # Manual input for results
-                            manual_results = st.text_area(
-                                "Paste Assessment Results from CrewAI Dashboard:",
-                                height=200,
-                                placeholder="Copy and paste the complete assessment output from your CrewAI dashboard here..."
-                            )
-                            
-                            if st.button("📊 Display Results") and manual_results:
-                                st.success("📋 Assessment Results Display")
+                                    
+                                    elif attempt < max_attempts - 1:
+                                        st.write(f"⏳ Checking... (Attempt {attempt + 1}/{max_attempts})")
+                                        time.sleep(10)
                                 
-                                # Try to parse as JSON first
-                                try:
-                                    parsed_results = json.loads(manual_results)
-                                    st.json(parsed_results)
-                                    
-                                    # Download as JSON
-                                    st.download_button(
-                                        label="📥 Download JSON",
-                                        data=json.dumps(parsed_results, indent=2),
-                                        file_name=f"risk_assessment_{project_name}_{int(time.time())}.json",
-                                        mime="application/json"
-                                    )
-                                except json.JSONDecodeError:
-                                    # Display as formatted text
-                                    st.text_area("Assessment Results:", value=manual_results, height=300)
-                                    
-                                    # Download as text
-                                    report_text = f"""AI/ML Risk Assessment Report
-Project: {project_name}
-Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}
-Workflow ID: {kickoff_id}
-
-ASSESSMENT RESULTS:
-{manual_results}
-"""
-                                    st.download_button(
-                                        label="📥 Download Report",
-                                        data=report_text,
-                                        file_name=f"risk_assessment_{project_name}_{int(time.time())}.txt",
-                                        mime="text/plain"
-                                    )
+                                else:
+                                    st.write(f"Attempt {attempt + 1}: Status {results_response.status_code}")
+                                    if attempt < max_attempts - 1:
+                                        time.sleep(10)
+                                        
+                            except Exception as e:
+                                st.write(f"Attempt {attempt + 1}: {str(e)}")
+                                if attempt < max_attempts - 1:
+                                    time.sleep(10)
+                        
+                        else:
+                            st.warning("⏰ Assessment is taking longer than expected. Your workflow is processing...")
+                            st.write(f"Workflow ID: {kickoff_id}")
+                            st.write("Results will be available in your CrewAI dashboard when complete.")
                     
                     else:
                         # Direct results returned
+                        st.success("✅ Assessment Complete!")
+                        st.subheader("📊 AI Risk Assessment Results")
                         st.json(assessment_results)
                         
                         # Download button
                         st.download_button(
-                            label="📥 Download Assessment",
+                            label="📥 Download Results",
                             data=json.dumps(assessment_results, indent=2),
-                            file_name=f"risk_assessment_{project_name}_{int(time.time())}.json",
+                            file_name=f"crewai_response_{int(time.time())}.json",
                             mime="application/json"
                         )
                 
