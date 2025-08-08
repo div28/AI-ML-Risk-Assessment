@@ -125,7 +125,52 @@ with col2:
                 result = response.json()
                 
                 # Handle different response formats
-                if "status" in result and result["status"] == "running":
+                if "kickoff_id" in result:
+                    # If we got a kickoff_id, poll for results
+                    kickoff_id = result["kickoff_id"]
+                    st.session_state.kickoff_id = kickoff_id
+                    status_text.text("Workflow running... Checking for results...")
+                    
+                    # Poll for completion
+                    max_polls = 60  # 5 minutes max
+                    for i in range(max_polls):
+                        time.sleep(5)
+                        
+                        # Try to get results using the kickoff_id
+                        status_url = f"{api_url.replace('/kickoff', '')}/status/{kickoff_id}"
+                        try:
+                            status_response = requests.get(status_url, headers=headers)
+                            if status_response.status_code == 200:
+                                status_data = status_response.json()
+                                if "status" in status_data:
+                                    if status_data["status"] == "completed":
+                                        result = status_data
+                                        break
+                                    elif status_data["status"] == "failed":
+                                        st.error("Workflow failed!")
+                                        break
+                                else:
+                                    # Might be the actual results
+                                    result = status_data
+                                    break
+                        except:
+                            # If status endpoint doesn't exist, try results endpoint
+                            results_url = f"{api_url.replace('/kickoff', '')}/results/{kickoff_id}"
+                            try:
+                                results_response = requests.get(results_url, headers=headers)
+                                if results_response.status_code == 200:
+                                    result = results_response.json()
+                                    break
+                            except:
+                                pass
+                        
+                        progress_bar.progress(min(50 + (i * 0.8), 95))
+                        status_text.text(f"Workflow running... Attempt {i+1}/{max_polls}")
+                        
+                        if i >= max_polls - 1:
+                            st.warning("Workflow is taking longer than expected. Results may be available later.")
+                            break
+                elif "status" in result and result["status"] == "running":
                     # If workflow is async, poll for results
                     job_id = result.get("job_id")
                     if job_id:
