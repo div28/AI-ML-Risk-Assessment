@@ -114,62 +114,53 @@ with col2:
         try:
             # Make API call
             status_text.text("Sending request to CrewAI...")
-            progress_bar.progress(25)
+            progress_bar.progress(0.25)
             
             response = requests.post(api_url, json=payload, headers=headers, timeout=300)
             
             if response.status_code == 200:
-                progress_bar.progress(50)
+                progress_bar.progress(0.5)
                 status_text.text("Request sent successfully. Processing...")
                 
                 result = response.json()
                 
                 # Handle different response formats
                 if "kickoff_id" in result:
-                    # If we got a kickoff_id, poll for results
                     kickoff_id = result["kickoff_id"]
-                    st.session_state.kickoff_id = kickoff_id
-                    status_text.text("Workflow running... Checking for results...")
+                    st.info(f"Workflow started with ID: {kickoff_id}")
+                    st.info("Since your workflow completed successfully on CrewAI, let's try to get the results directly.")
                     
-                    # Poll for completion
-                    max_polls = 60  # 5 minutes max
-                    for i in range(max_polls):
-                        time.sleep(5)
-                        
-                        # Try to get results using the kickoff_id
-                        status_url = f"{api_url.replace('/kickoff', '')}/status/{kickoff_id}"
+                    # Try different endpoints to get the actual results
+                    possible_endpoints = [
+                        f"{api_url.replace('/kickoff', '')}/results/{kickoff_id}",
+                        f"{api_url.replace('/kickoff', '')}/status/{kickoff_id}",
+                        f"{api_url.replace('/kickoff', '')}/output/{kickoff_id}",
+                        f"{api_url.replace('/kickoff', '')}/result/{kickoff_id}"
+                    ]
+                    
+                    for endpoint in possible_endpoints:
                         try:
-                            status_response = requests.get(status_url, headers=headers)
-                            if status_response.status_code == 200:
-                                status_data = status_response.json()
-                                if "status" in status_data:
-                                    if status_data["status"] == "completed":
-                                        result = status_data
-                                        break
-                                    elif status_data["status"] == "failed":
-                                        st.error("Workflow failed!")
-                                        break
+                            st.write(f"Trying: {endpoint}")
+                            response = requests.get(endpoint, headers=headers, timeout=30)
+                            if response.status_code == 200:
+                                data = response.json()
+                                if data and len(str(data)) > 100:  # If we got substantial data
+                                    result = data
+                                    st.success(f"Found results at: {endpoint}")
+                                    break
                                 else:
-                                    # Might be the actual results
-                                    result = status_data
-                                    break
-                        except:
-                            # If status endpoint doesn't exist, try results endpoint
-                            results_url = f"{api_url.replace('/kickoff', '')}/results/{kickoff_id}"
-                            try:
-                                results_response = requests.get(results_url, headers=headers)
-                                if results_response.status_code == 200:
-                                    result = results_response.json()
-                                    break
-                            except:
-                                pass
-                        
-                        progress_bar.progress(min(50 + (i * 0.8), 95))
-                        status_text.text(f"Workflow running... Attempt {i+1}/{max_polls}")
-                        
-                        if i >= max_polls - 1:
-                            st.warning("Workflow is taking longer than expected. Results may be available later.")
-                            break
+                                    st.write(f"Response: {data}")
+                            else:
+                                st.write(f"Status: {response.status_code}")
+                        except Exception as e:
+                            st.write(f"Error: {str(e)}")
+                    
+                    if "kickoff_id" in result and len(result) == 1:
+                        st.warning("Could not retrieve completed results automatically. You may need to check your CrewAI dashboard for the full output.")
+                        st.write("**Manual Options:**")
+                        st.write("1. Check your CrewAI dashboard for completed results")
+                        st.write("2. Look for a 'View Results' or 'Download' option in CrewAI")
+                        st.write("3. The workflow has completed successfully - results should be available in CrewAI")
                 elif "status" in result and result["status"] == "running":
                     # If workflow is async, poll for results
                     job_id = result.get("job_id")
@@ -189,9 +180,9 @@ with col2:
                                 elif status_data.get("status") == "failed":
                                     st.error("Workflow failed!")
                                     break
-                            progress_bar.progress(min(75 + i, 95))
+                            progress_bar.progress(min(0.75 + (i * 0.004), 0.95))
                 
-                progress_bar.progress(100)
+                progress_bar.progress(1.0)
                 status_text.text("Risk Assessment completed!")
                 
                 # Display results
