@@ -12,16 +12,6 @@ st.set_page_config(
 st.title("AI/ML Risk Assessment Workflow")
 st.write("Powered by CrewAI Multi-Agent System")
 
-# Sidebar for configuration
-with st.sidebar:
-    st.header("Configuration")
-    api_url = st.text_input("CrewAI API URL", 
-                           value="https://ai-ml-product-risk-intake-assessment-agent--1c51311c.crewai.com/kickoff")
-    api_key = st.text_input("CrewAI Token (if required)", type="password")
-    
-    # Add option to test without auth
-    use_auth = st.checkbox("Use Authentication", value=True)
-
 # Main interface
 col1, col2 = st.columns([1, 1])
 
@@ -29,237 +19,144 @@ with col1:
     st.header("Input")
     
     # Required fields for your CrewAI API
-    project_name = st.text_input("Project Name", placeholder="e.g., Loan Approval ML System")
+    project_name = st.text_input("Project Name", value="Sales Email Copilot")
     
     risk_description = st.text_area("Risk Description", height=100, 
-                                   placeholder="Describe the AI/ML system and its risks...")
+                                   value="Automates drafting of customer emails using sensitive CRM data")
     
-    initial_impact = st.selectbox("Initial Impact Level", ["Low", "Medium", "High", "Critical"])
+    initial_impact = st.selectbox("Initial Impact Level", ["Low", "Medium", "High", "Critical"], index=2)
     
-    initial_probability = st.selectbox("Initial Probability", ["Low", "Medium", "High"])
+    initial_probability = st.selectbox("Initial Probability", ["Low", "Medium", "High"], index=2)
     
     contextual_notes = st.text_area("Contextual Notes", height=80,
-                                   placeholder="Additional context, constraints, or considerations...")
+                                   value="Targets EU; GDPR applies; drafts stored for 14 days.")
     
-    customer_email = st.text_input("Customer Email", placeholder="customer@company.com")
-    
-    # Additional parameters
-    with st.expander("Advanced Options"):
-        priority = st.selectbox("Priority", ["Low", "Medium", "High"])
-        agents_to_use = st.multiselect("Select Agents", 
-                                     ["Risk Analyst", "Compliance Expert", "Technical Reviewer", "Report Generator"])
-        max_iterations = st.slider("Max Iterations", 1, 10, 3)
+    customer_email = st.text_input("Customer Email", value="divya288@gmail.com")
     
     # Submit button
-    if st.button("Run Risk Assessment", type="primary"):
-        # Debug: Show what values we're capturing
-        st.write("DEBUG - Captured values:")
-        st.write(f"Project Name: '{project_name}'")
-        st.write(f"Risk Description: '{risk_description}'")
-        st.write(f"Customer Email: '{customer_email}'")
-        st.write(f"Initial Impact: '{initial_impact}'")
-        st.write(f"Initial Probability: '{initial_probability}'")
-        
+    if st.button("🚀 Generate Risk Assessment", type="primary"):
         if risk_description and project_name and customer_email:
-            # Store input in session state
-            st.session_state.workflow_running = True
-            st.session_state.api_payload = {
-                "inputs": {
-                    "risk_description": risk_description,
-                    "initial_impact": initial_impact,
-                    "contextual_notes": contextual_notes,
-                    "customer_email": customer_email,
-                    "project_name": project_name,
-                    "initial_probability": initial_probability
-                }
-            }
-            st.session_state.workflow_params = {
-                "priority": priority,
-                "agents": agents_to_use,
-                "max_iterations": max_iterations
-            }
             
-            # Debug: Show the payload being sent
-            st.write("DEBUG - Payload being sent:")
-            st.json(st.session_state.api_payload)
-        else:
-            st.error("Please fill in all required fields: Risk Description, Project Name, and Customer Email")
-            st.write(f"Missing: Risk Description={bool(risk_description)}, Project Name={bool(project_name)}, Customer Email={bool(customer_email)}")
-
-with col2:
-    st.header("Output")
-    
-    # Check if workflow is running
-    if hasattr(st.session_state, 'workflow_running') and st.session_state.workflow_running:
-        
-        # Prepare API request
-        headers = {"Content-Type": "application/json"}
-        if api_key and use_auth:
-            # Try Bearer format with new token
-            headers["Authorization"] = f"Bearer {api_key}"
-            
-            # Debug: show what headers we're sending
-            st.write("DEBUG - Headers being sent:")
-            debug_headers = headers.copy()
-            if "Authorization" in debug_headers:
-                debug_headers["Authorization"] = f"Bearer {api_key[:4]}..."
-            st.json(debug_headers)
-        
-        payload = st.session_state.api_payload
-        
-        # Progress indicator
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
-        try:
-            # Make API call
-            status_text.text("Sending request to CrewAI...")
-            progress_bar.progress(0.25)
-            
-            response = requests.post(api_url, json=payload, headers=headers, timeout=300)
-            
-            if response.status_code == 200:
-                progress_bar.progress(0.5)
-                status_text.text("Request sent successfully. Processing...")
+            with col2:
+                st.header("Output")
                 
-                result = response.json()
-                
-                # Handle different response formats
-                if "kickoff_id" in result:
-                    kickoff_id = result["kickoff_id"]
-                    st.info(f"Workflow started with ID: {kickoff_id}")
-                    st.info("Since your workflow completed successfully on CrewAI, let's try to get the results directly.")
+                # Show loading
+                with st.spinner("Calling CrewAI API..."):
                     
-                    # Try different endpoints to get the actual results
-                    possible_endpoints = [
-                        f"{api_url.replace('/kickoff', '')}/results/{kickoff_id}",
-                        f"{api_url.replace('/kickoff', '')}/status/{kickoff_id}",
-                        f"{api_url.replace('/kickoff', '')}/output/{kickoff_id}",
-                        f"{api_url.replace('/kickoff', '')}/result/{kickoff_id}"
-                    ]
-                    
-                    for endpoint in possible_endpoints:
-                        try:
-                            st.write(f"Trying: {endpoint}")
-                            response = requests.get(endpoint, headers=headers, timeout=30)
-                            if response.status_code == 200:
-                                data = response.json()
-                                if data and len(str(data)) > 100:  # If we got substantial data
-                                    result = data
-                                    st.success(f"Found results at: {endpoint}")
-                                    break
-                                else:
-                                    st.write(f"Response: {data}")
-                            else:
-                                st.write(f"Status: {response.status_code}")
-                        except Exception as e:
-                            st.write(f"Error: {str(e)}")
-                    
-                    if "kickoff_id" in result and len(result) == 1:
-                        st.warning("Could not retrieve completed results automatically. You may need to check your CrewAI dashboard for the full output.")
-                        st.write("**Manual Options:**")
-                        st.write("1. Check your CrewAI dashboard for completed results")
-                        st.write("2. Look for a 'View Results' or 'Download' option in CrewAI")
-                        st.write("3. The workflow has completed successfully - results should be available in CrewAI")
-                elif "status" in result and result["status"] == "running":
-                    # If workflow is async, poll for results
-                    job_id = result.get("job_id")
-                    if job_id:
-                        st.session_state.job_id = job_id
-                        status_text.text("Workflow running... Checking status...")
-                        
-                        # Poll for completion
-                        for i in range(60):  # 5 minutes max
-                            time.sleep(5)
-                            status_response = requests.get(f"{api_url}/status/{job_id}")
-                            if status_response.status_code == 200:
-                                status_data = status_response.json()
-                                if status_data.get("status") == "completed":
-                                    result = status_data.get("result", {})
-                                    break
-                                elif status_data.get("status") == "failed":
-                                    st.error("Workflow failed!")
-                                    break
-                            progress_bar.progress(min(0.75 + (i * 0.004), 0.95))
-                
-                progress_bar.progress(1.0)
-                status_text.text("Risk Assessment completed!")
+                    # Call your CrewAI API with actual credentials
+                    response = requests.post(
+                        "https://ai-ml-product-risk-intake-assessment-agent--7d76c5b8.crewai.com/kickoff",
+                        headers={
+                            "Authorization": "Bearer a57ebdae2616",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "inputs": {
+                                "project_name": project_name,
+                                "risk_description": risk_description,
+                                "contextual_notes": contextual_notes,
+                                "initial_probability": initial_probability,
+                                "initial_impact": initial_impact,
+                                "customer_email": customer_email
+                            }
+                        },
+                        timeout=300
+                    )
                 
                 # Display results
-                st.success("Risk Assessment completed successfully!")
+                if response.status_code == 200:
+                    st.success("✅ Assessment Complete!")
+                    st.subheader("📊 AI Risk Assessment Results")
+                    
+                    # Show the complete report
+                    assessment_results = response.json()
+                    
+                    # Display results beautifully
+                    if "kickoff_id" in assessment_results:
+                        st.info(f"🚀 Workflow Started! ID: {assessment_results['kickoff_id']}")
+                        st.write("Your multi-agent assessment is now running...")
+                        
+                        # Try to get immediate results
+                        kickoff_id = assessment_results["kickoff_id"]
+                        
+                        # Wait a moment and try to get results
+                        st.write("⏳ Checking for completed results...")
+                        time.sleep(5)
+                        
+                        # Try different result endpoints
+                        base_url = "https://ai-ml-product-risk-intake-assessment-agent--7d76c5b8.crewai.com"
+                        result_urls = [
+                            f"{base_url}/{kickoff_id}",
+                            f"{base_url}/result/{kickoff_id}",
+                            f"{base_url}/output/{kickoff_id}",
+                            f"{base_url}/status/{kickoff_id}"
+                        ]
+                        
+                        found_results = False
+                        for url in result_urls:
+                            try:
+                                result_response = requests.get(url, headers={
+                                    "Authorization": "Bearer a57ebdae2616",
+                                    "Content-Type": "application/json"
+                                }, timeout=10)
+                                
+                                if result_response.status_code == 200:
+                                    result_data = result_response.json()
+                                    if result_data and len(str(result_data)) > 100:
+                                        st.success("📋 Found Assessment Results!")
+                                        st.json(result_data)
+                                        
+                                        # Download button
+                                        st.download_button(
+                                            label="📥 Download Assessment",
+                                            data=json.dumps(result_data, indent=2),
+                                            file_name=f"risk_assessment_{project_name}_{int(time.time())}.json",
+                                            mime="application/json"
+                                        )
+                                        found_results = True
+                                        break
+                            except:
+                                continue
+                        
+                        if not found_results:
+                            st.write("⌛ Assessment is processing... Results will be available shortly.")
+                            st.write("Your workflow is running successfully in the background!")
+                    
+                    else:
+                        # Direct results returned
+                        st.json(assessment_results)
+                        
+                        # Download button
+                        st.download_button(
+                            label="📥 Download Assessment",
+                            data=json.dumps(assessment_results, indent=2),
+                            file_name=f"risk_assessment_{project_name}_{int(time.time())}.json",
+                            mime="application/json"
+                        )
                 
-                # Show agent outputs
-                if "agents_output" in result:
-                    for agent_name, output in result["agents_output"].items():
-                        with st.expander(f"Agent {agent_name} Analysis"):
-                            st.write(output)
-                
-                # Show final result
-                if "final_output" in result:
-                    st.subheader("Risk Assessment Report")
-                    st.write(result["final_output"])
-                elif "result" in result:
-                    st.subheader("Risk Assessment Report")
-                    st.write(result["result"])
                 else:
-                    st.subheader("Complete Response")
-                    st.json(result)
-                
-                # Show execution details
-                with st.expander("Execution Details"):
-                    if "execution_time" in result:
-                        st.metric("Execution Time", f"{result['execution_time']:.2f}s")
-                    if "tokens_used" in result:
-                        st.metric("Tokens Used", result["tokens_used"])
-                    if "agents_involved" in result:
-                        st.write("**Agents Involved:**", ", ".join(result["agents_involved"]))
-                
-                # Download option - only show if we have actual results
-                if "final_output" in result or "result" in result or len(result) > 1:
-                    st.download_button(
-                        label="Download JSON",
-                        data=json.dumps(result, indent=2),
-                        file_name=f"risk_assessment_results_{int(time.time())}.json",
-                        mime="application/json"
-                    )
-                else:
-                    st.info("Download will be available when the workflow completes and returns full results.")
-                
-            else:
-                st.error(f"API Error: {response.status_code} - {response.text}")
-                
-        except requests.exceptions.Timeout:
-            st.error("Request timed out. The workflow might still be running.")
-        except requests.exceptions.RequestException as e:
-            st.error(f"Request failed: {str(e)}")
-        except Exception as e:
-            st.error(f"Unexpected error: {str(e)}")
+                    st.error(f"❌ Error: {response.status_code}")
+                    st.write(response.text)
         
-        finally:
-            progress_bar.empty()
-            st.session_state.workflow_running = False
+        else:
+            st.error("Please fill in all required fields!")
 
-# Real-time status updates
-if "job_id" in st.session_state:
-    if st.button("Refresh Status"):
-        st.rerun()
+with col2:
+    if 'assessment_results' not in locals():
+        st.header("Output")
+        st.write("👆 Fill in the form and click 'Generate Risk Assessment' to see results")
 
-# Sample request section
-with st.expander("Sample Risk Assessment Request"):
+# Sample section
+st.markdown("---")
+with st.expander("📝 Sample Assessment"):
     st.write("""
-    **Example input:**
-    
-    Project Name: Loan Approval ML System
-    Risk Description: Machine learning model for loan approval decisions using customer credit history, income data, and demographic information. Will automatically approve or deny loan applications up to $50,000.
-    
-    **This will trigger your AI agents to analyze:**
-    - Bias and fairness risks
-    - Regulatory compliance issues  
-    - Data privacy concerns
-    - Model interpretability requirements
-    - Operational risks
+    **Project:** Sales Email Copilot
+    **Risk Description:** Automates drafting of customer emails using sensitive CRM data
+    **Impact:** High - Potential GDPR violations and data breaches
+    **Probability:** High - Direct access to sensitive customer information
+    **Context:** EU operations, 14-day data retention, automated processing
     """)
 
 # Footer
 st.markdown("---")
-st.markdown("Built with CrewAI and Streamlit for AI/ML Risk Assessment")
+st.markdown("🤖 **Multi-Agent AI Risk Assessment** | Built with CrewAI + Streamlit")
