@@ -12,6 +12,27 @@ st.set_page_config(
 st.title("AI/ML Risk Assessment Workflow")
 st.write("Powered by CrewAI Multi-Agent System")
 
+# Configuration section at the top
+st.subheader("🔧 Configuration")
+col_config1, col_config2 = st.columns(2)
+
+with col_config1:
+    api_url = st.text_input(
+        "CrewAI API URL", 
+        value="https://ai-ml-product-risk-intake-assessment-agent--7d76c5b8.crewai.com/kickoff",
+        help="Enter your CrewAI API endpoint"
+    )
+
+with col_config2:
+    api_token = st.text_input(
+        "API Token", 
+        value="a57ebdae2616",
+        type="password",
+        help="Enter your CrewAI authentication token"
+    )
+
+st.markdown("---")
+
 # Main interface
 col1, col2 = st.columns([1, 1])
 
@@ -41,11 +62,11 @@ with col1:
                 # Show loading
                 with st.spinner("Calling CrewAI API..."):
                     
-                    # Call your CrewAI API with actual credentials
+                    # Call your CrewAI API with configurable credentials
                     response = requests.post(
-                        "https://ai-ml-product-risk-intake-assessment-agent--7d76c5b8.crewai.com/kickoff",
+                        api_url,
                         headers={
-                            "Authorization": "Bearer a57ebdae2616",
+                            "Authorization": f"Bearer {api_token}",
                             "Content-Type": "application/json"
                         },
                         json={
