@@ -15,8 +15,12 @@ st.write("Powered by CrewAI Multi-Agent System")
 # Sidebar for configuration
 with st.sidebar:
     st.header("Configuration")
-    api_url = st.text_input("CrewAI API URL", placeholder="https://your-crewai-api.com/kickoff")
-    api_key = st.text_input("API Key (if required)", type="password")
+    api_url = st.text_input("CrewAI API URL", 
+                           value="https://ai-ml-product-risk-intake-assessment-agent--1c51311c.crewai.com/kickoff")
+    api_key = st.text_input("CrewAI Token (if required)", type="password")
+    
+    # Add option to test without auth
+    use_auth = st.checkbox("Use Authentication", value=True)
 
 # Main interface
 col1, col2 = st.columns([1, 1])
@@ -60,12 +64,14 @@ with col1:
             # Store input in session state
             st.session_state.workflow_running = True
             st.session_state.api_payload = {
-                "risk_description": risk_description,
-                "initial_impact": initial_impact,
-                "contextual_notes": contextual_notes,
-                "customer_email": customer_email,
-                "project_name": project_name,
-                "initial_probability": initial_probability
+                "inputs": {
+                    "risk_description": risk_description,
+                    "initial_impact": initial_impact,
+                    "contextual_notes": contextual_notes,
+                    "customer_email": customer_email,
+                    "project_name": project_name,
+                    "initial_probability": initial_probability
+                }
             }
             st.session_state.workflow_params = {
                 "priority": priority,
@@ -88,8 +94,17 @@ with col2:
         
         # Prepare API request
         headers = {"Content-Type": "application/json"}
-        if api_key:
+        if api_key and use_auth:
+            # Try CrewAI specific formats
             headers["Authorization"] = f"Bearer {api_key}"
+            headers["X-API-Key"] = api_key  # Alternative format
+            
+            # Debug: show what headers we're sending
+            st.write("DEBUG - Headers being sent:")
+            debug_headers = headers.copy()
+            if "Authorization" in debug_headers:
+                debug_headers["Authorization"] = f"Bearer {api_key[:8]}..."
+            st.json(debug_headers)
         
         payload = st.session_state.api_payload
         
