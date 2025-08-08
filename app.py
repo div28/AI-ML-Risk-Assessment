@@ -31,11 +31,9 @@ with col1:
     contextual_notes = st.text_area("Contextual Notes", height=80,
                                    value="Targets EU; GDPR applies; drafts stored for 14 days.")
     
-    customer_email = st.text_input("Customer Email", value="divya288@gmail.com")
-    
     # Submit button
     if st.button("🚀 Generate Risk Assessment", type="primary"):
-        if risk_description and project_name and customer_email:
+        if risk_description and project_name:
             
             with col2:
                 st.header("Output")
@@ -57,7 +55,7 @@ with col1:
                                 "contextual_notes": contextual_notes,
                                 "initial_probability": initial_probability,
                                 "initial_impact": initial_impact,
-                                "customer_email": customer_email
+                                "customer_email": "assessment@company.com"  # Fixed placeholder
                             }
                         },
                         timeout=300
@@ -121,6 +119,53 @@ with col1:
                         if not found_results:
                             st.write("⌛ Assessment is processing... Results will be available shortly.")
                             st.write("Your workflow is running successfully in the background!")
+                            
+                            # Add manual results input section
+                            st.markdown("---")
+                            st.subheader("📋 Manual Results Entry")
+                            st.write("Since your CrewAI workflow completed successfully, you can paste the results here:")
+                            
+                            # Manual input for results
+                            manual_results = st.text_area(
+                                "Paste Assessment Results from CrewAI Dashboard:",
+                                height=200,
+                                placeholder="Copy and paste the complete assessment output from your CrewAI dashboard here..."
+                            )
+                            
+                            if st.button("📊 Display Results") and manual_results:
+                                st.success("📋 Assessment Results Display")
+                                
+                                # Try to parse as JSON first
+                                try:
+                                    parsed_results = json.loads(manual_results)
+                                    st.json(parsed_results)
+                                    
+                                    # Download as JSON
+                                    st.download_button(
+                                        label="📥 Download JSON",
+                                        data=json.dumps(parsed_results, indent=2),
+                                        file_name=f"risk_assessment_{project_name}_{int(time.time())}.json",
+                                        mime="application/json"
+                                    )
+                                except json.JSONDecodeError:
+                                    # Display as formatted text
+                                    st.text_area("Assessment Results:", value=manual_results, height=300)
+                                    
+                                    # Download as text
+                                    report_text = f"""AI/ML Risk Assessment Report
+Project: {project_name}
+Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}
+Workflow ID: {kickoff_id}
+
+ASSESSMENT RESULTS:
+{manual_results}
+"""
+                                    st.download_button(
+                                        label="📥 Download Report",
+                                        data=report_text,
+                                        file_name=f"risk_assessment_{project_name}_{int(time.time())}.txt",
+                                        mime="text/plain"
+                                    )
                     
                     else:
                         # Direct results returned
@@ -139,23 +184,12 @@ with col1:
                     st.write(response.text)
         
         else:
-            st.error("Please fill in all required fields!")
+            st.error("Please fill in Project Name and Risk Description!")
 
 with col2:
     if 'assessment_results' not in locals():
         st.header("Output")
         st.write("👆 Fill in the form and click 'Generate Risk Assessment' to see results")
-
-# Sample section
-st.markdown("---")
-with st.expander("📝 Sample Assessment"):
-    st.write("""
-    **Project:** Sales Email Copilot
-    **Risk Description:** Automates drafting of customer emails using sensitive CRM data
-    **Impact:** High - Potential GDPR violations and data breaches
-    **Probability:** High - Direct access to sensitive customer information
-    **Context:** EU operations, 14-day data retention, automated processing
-    """)
 
 # Footer
 st.markdown("---")
